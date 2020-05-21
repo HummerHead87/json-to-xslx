@@ -3,9 +3,7 @@ use std::fs::File;
 extern crate serde_json;
 use serde_json::{Result, Value};
 use std::collections::HashMap;
-extern crate simple_excel_writer as excel;
-
-use excel::*;
+use xlsxwriter::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -52,22 +50,23 @@ fn parse_value(v: &Value, contents: &mut HashMap<String, String>, path: &str) {
 }
 
 fn write_to_excel (contents: &HashMap<String, String>) {
-    let mut wb = Workbook::create("./test.xlsx");
-    let mut sheet = wb.create_sheet("Dictionary");
+    let wb = Workbook::new("./test.xlsx");
+    let mut sheet = wb.add_worksheet(Some("Dictionary")).unwrap();
 
     let mut keys: Vec<_> = contents.keys().collect();
     keys.sort();
 
-    wb.write_sheet(&mut sheet, |sw| {
-        for key in keys.iter() {
-            let val = contents.get(*key).unwrap();
-            if let Err(err) = sw.append_row(row![key.as_str(), val.as_str()]) {
-                return Err(err);
-            }
-        }
+    let mut row = 1;
+    for key in keys.iter() {
+        let val = contents.get(*key).unwrap();
+        
+        sheet.write_string(row, 0, key, None)
+            .expect("Error write in excel file");
+        sheet.write_string(row, 1, val, None)
+            .expect("Error write in excel file");
 
-        Ok(())
-    }).expect("write excel error");
-
+        row += 1;
+    }
+    
     wb.close().expect("close excel error!");
 }
