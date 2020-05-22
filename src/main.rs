@@ -1,22 +1,21 @@
-use std::env;
 use std::fs::File;
-use std::collections::HashMap;
-extern crate serde_json;
-use serde_json::{Result, Value};
-extern crate xlsxwriter;
-use xlsxwriter::*;
-extern crate clap;
 use clap::{App, Arg};
-
-#[derive(Debug)]
-struct Config<'a> {
-    input: &'a str,
-    output: &'a str,
-    separator: &'a str,
-}
+use json_xlsx::{helpers, json, xlsx};
 
 fn main() {
-    let matches = App::new("json-to-xlsx")
+    let matches = get_matches();
+    let config = helpers::parse_config(&matches);
+    println!("{:?}", config);
+    
+    let file = File::open(config.input).unwrap();
+
+    let contents = json::parse_file(&file).unwrap();
+
+    xlsx::write_to_xlsx(&contents, config.output);
+}
+
+fn get_matches<'a>() -> clap::ArgMatches<'a> {
+    App::new("json-to-xlsx")
         .version("0.1.0")
         .author("HummerHead87 <snooks87@gmail.com>")
         .about("convert json files to xlsx tables")
@@ -46,72 +45,5 @@ fn main() {
             .default_value(".")
             .help("separator for json field names in output file")
         )
-        .get_matches();
-
-    let config = parse_config(&matches);
-    println!("{:?}", config);
-    
-    let file = File::open(config.input)
-        .expect(&format!("Can't open file {}", config.input));
-
-    let contents = parse_file(&file).unwrap();
-
-    write_to_excel(&contents, config.output);
-}
-
-fn parse_config<'a>(matches: &'a clap::ArgMatches) -> Config<'a> {
-    Config {
-        output: matches.value_of("output").unwrap(),
-        input: matches.value_of("input").unwrap(),
-        separator: matches.value_of("separator").unwrap(),
-    }
-}
-
-fn parse_file(file: &File) -> Result<HashMap<String, String>> {
-    let v: Value = serde_json::from_reader(file)?;
-    let mut contents = HashMap::new();
-
-    parse_value(&v, &mut contents, "");
-    Ok(contents)
-}
-
-fn parse_value(v: &Value, contents: &mut HashMap<String, String>, path: &str) {
-    match v {
-        Value::String(val) => {
-            contents.insert(path.to_string(), val.to_string());
-        }
-        Value::Object(map) => {
-            for key in map.keys() {
-                let path = if path.len() == 0 {
-                    key.to_string()
-                } else {
-                    format!("{}.{}", path, key)
-                };
-                parse_value(map.get(key).unwrap(), contents, &path);
-            }
-        },
-        _ => (),
-    };
-}
-
-fn write_to_excel (contents: &HashMap<String, String>, output: &str) {
-    let wb = Workbook::new(output);
-    let mut sheet = wb.add_worksheet(Some("Dictionary")).unwrap();
-
-    let mut keys: Vec<_> = contents.keys().collect();
-    keys.sort();
-
-    let mut row = 1;
-    for key in keys.iter() {
-        let val = contents.get(*key).unwrap();
-        
-        sheet.write_string(row, 0, key, None)
-            .expect("Error write in excel file");
-        sheet.write_string(row, 1, val, None)
-            .expect("Error write in excel file");
-
-        row += 1;
-    }
-    
-    wb.close().expect("close excel error!");
+        .get_matches()
 }
