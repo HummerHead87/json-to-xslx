@@ -1,25 +1,70 @@
 use std::env;
 use std::fs::File;
+use std::collections::HashMap;
 extern crate serde_json;
 use serde_json::{Result, Value};
-use std::collections::HashMap;
+extern crate xlsxwriter;
 use xlsxwriter::*;
+extern crate clap;
+use clap::{App, Arg};
+
+#[derive(Debug)]
+struct Config<'a> {
+    input: &'a str,
+    output: &'a str,
+    separator: &'a str,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let matches = App::new("json-to-xlsx")
+        .version("0.1.0")
+        .author("HummerHead87 <snooks87@gmail.com>")
+        .about("convert json files to xlsx tables")
+        .arg(
+            Arg::with_name("input")
+            .short("i")
+            .long("input")
+            .takes_value(true)
+            .value_name("FILE")
+            .help("provide a *.json file to parse from")
+            .required(true)
+        )
+        .arg(
+            Arg::with_name("output")
+            .short("o")
+            .long("output")
+            .takes_value(true)
+            .value_name("FILE")
+            .default_value("output.xlsx")
+            .help("provide a *.xlsx file to write result")
+        )
+        .arg(
+            Arg::with_name("separator")
+            .short("sep")
+            .long("separator")
+            .takes_value(true)
+            .default_value(".")
+            .help("separator for json field names in output file")
+        )
+        .get_matches();
 
-    let filename = parse_config(&args);
-
-    let file = File::open(filename)
-        .expect(&format!("Can't open file {}", filename));
+    let config = parse_config(&matches);
+    println!("{:?}", config);
+    
+    let file = File::open(config.input)
+        .expect(&format!("Can't open file {}", config.input));
 
     let contents = parse_file(&file).unwrap();
 
-    write_to_excel(&contents);
+    write_to_excel(&contents, config.output);
 }
 
-fn parse_config(args: &[String]) -> &str {
-    &args[1]
+fn parse_config<'a>(matches: &'a clap::ArgMatches) -> Config<'a> {
+    Config {
+        output: matches.value_of("output").unwrap(),
+        input: matches.value_of("input").unwrap(),
+        separator: matches.value_of("separator").unwrap(),
+    }
 }
 
 fn parse_file(file: &File) -> Result<HashMap<String, String>> {
@@ -49,8 +94,8 @@ fn parse_value(v: &Value, contents: &mut HashMap<String, String>, path: &str) {
     };
 }
 
-fn write_to_excel (contents: &HashMap<String, String>) {
-    let wb = Workbook::new("./test.xlsx");
+fn write_to_excel (contents: &HashMap<String, String>, output: &str) {
+    let wb = Workbook::new(output);
     let mut sheet = wb.add_worksheet(Some("Dictionary")).unwrap();
 
     let mut keys: Vec<_> = contents.keys().collect();
