@@ -10,8 +10,8 @@ fn main() {
     let file = File::open(config.input).unwrap();
 
     let contents = json::parse_file(&file).unwrap();
-
-    xlsx::write_to_xlsx(&contents, config.output);
+    // println!("{:?}", contents);
+    xlsx::write_to_xlsx(&contents, config.output, config.separator);
 }
 
 fn get_matches<'a>() -> clap::ArgMatches<'a> {
