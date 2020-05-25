@@ -7,11 +7,11 @@ fn main() {
     let config = helpers::parse_config(matches);
     println!("{:?}", config);
     
-    let file = File::open(config.input).unwrap();
+    let file = File::open(&config.input).unwrap();
 
     let contents = json::parse_file(&file).unwrap();
     // println!("{:?}", contents);
-    xlsx::write_to_xlsx(&contents, &config.output, &config.separator);
+    xlsx::write_to_xlsx(&contents, &config);
 }
 
 fn get_matches<'a>() -> clap::ArgMatches<'a> {
@@ -44,6 +44,14 @@ fn get_matches<'a>() -> clap::ArgMatches<'a> {
             .takes_value(true)
             .default_value(".")
             .help("separator for json field names in output file")
+        )
+        .arg(
+            Arg::with_name("language")
+            .short("l")
+            .long("language")
+            .takes_value(true)
+            .default_value("ru")
+            .help("language of words in .json input file")
         )
         .get_matches()
 }
