@@ -4,14 +4,14 @@ use json_xlsx::{helpers, json, xlsx};
 
 fn main() {
     let matches = get_matches();
-    let config = helpers::parse_config(&matches);
+    let config = helpers::parse_config(matches);
     println!("{:?}", config);
     
     let file = File::open(config.input).unwrap();
 
     let contents = json::parse_file(&file).unwrap();
     // println!("{:?}", contents);
-    xlsx::write_to_xlsx(&contents, config.output, config.separator);
+    xlsx::write_to_xlsx(&contents, &config.output, &config.separator);
 }
 
 fn get_matches<'a>() -> clap::ArgMatches<'a> {

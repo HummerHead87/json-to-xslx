@@ -1,14 +1,14 @@
 #[derive(Debug)]
-pub struct Config<'a> {
-    pub input: &'a str,
-    pub output: &'a str,
-    pub separator: &'a str,
+pub struct Config {
+    pub input: String,
+    pub output: String,
+    pub separator: String,
 }
 
-pub fn parse_config<'a>(matches: &'a clap::ArgMatches) -> Config<'a> {
+pub fn parse_config(matches: clap::ArgMatches) -> Config {
     Config {
-        output: matches.value_of("output").unwrap(),
-        input: matches.value_of("input").unwrap(),
-        separator: matches.value_of("separator").unwrap(),
+        output: matches.value_of("output").unwrap().to_string(),
+        input: matches.value_of("input").unwrap().to_string(),
+        separator: matches.value_of("separator").unwrap().to_string(),
     }
 }
